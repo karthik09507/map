@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NavIC Messaging Service</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    body {
+      margin: 0; padding: 0; font-family: Arial, sans-serif;
+      background: lightblue; height: 100vh;
+    }
+    .centered {
+      display: flex; justify-content: center; align-items: center; height: 100%;
+    }
+    .box {
+      background: #fff; border: 2px solid #000; border-radius: 10px;
+      padding: 25px; width: 300px; box-shadow: 0 0 10px #0002;
+    }
+    h1, h2 { text-align: center; margin: 10px 0; }
+    form > div { margin: 10px 0; }
+    label, input { display: block; width: 100%; }
+    input { padding: 8px; margin-top: 4px; box-sizing: border-box; }
+    input[type="submit"], .btn {
+      background: #333; color: #fff; border: none; border-radius: 5px;
+      padding: 10px; margin-top: 10px; cursor: pointer;
+    }
+    input[type="submit"]:hover, .btn:hover { background: #555; }
+    .link {
+      text-align: center; font-size: 0.9em; margin-top: 10px;
+    }
+    .link button {
+      background: none; border: none; color: blue; text-decoration: underline; cursor: pointer;
+    }
+    #map {
+      height: 100vh; width: 100%; display: none;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Login/Signup Box -->
+<div class="centered" id="authBox">
+  <div class="box">
+    <h1>NavIC Messaging Service</h1>
+
+    <!-- Sign In -->
+    <form id="signin" onsubmit="event.preventDefault(); loginSuccess();">
+      <h2>Sign In</h2>
+      <div><label>Username<input required></label></div>
+      <div><label>Password<input type="password" required></label></div>
+      <input type="submit" value="Log In" />
+      <div class="link"><button onclick="show('forgot')">Forgot Password?</button></div>
+      <div class="link">New user? <button onclick="show('signup')">Sign Up</button></div>
+    </form>
+
+    <!-- Sign Up -->
+    <form id="signup" style="display:none" onsubmit="event.preventDefault(); alert('Account created!'); show('signin')">
+      <h2>Sign Up</h2>
+      <div><label>Email<input type="email" required></label></div>
+      <div><label>Username<input required></label></div>
+      <div><label>Password<input type="password" required></label></div>
+      <input type="submit" value="Sign Up" />
+      <div class="link">Have an account? <button onclick="show('signin')">Sign In</button></div>
+    </form>
+
+    <!-- Forgot Password -->
+    <form id="forgot" style="display:none" onsubmit="event.preventDefault(); alert('Reset link sent!'); show('signin')">
+      <h2>Reset Password</h2>
+      <div><label>Email<input type="email" required></label></div>
+      <button class="btn" type="submit">Send Reset Link</button>
+      <div class="link"><button onclick="show('signin')">Back to Sign In</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- Map Container -->
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+  function show(id) {
+    ['signin', 'signup', 'forgot'].forEach(i =>
+      document.getElementById(i).style.display = (i === id ? 'block' : 'none'));
+  }
+
+  function loginSuccess() {
+    document.getElementById("authBox").style.display = "none";
+    document.getElementById("map").style.display = "block";
+    loadMap();
+    history.pushState({ page: "map" }, "Map", "#map");
+  }
+
+  function loadMap() {
+    const map = L.map('map').setView([20.0, 80.0], 5);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // pinpoint marker for location
+    const marker = L.marker([12.968266, 77.601334]).addTo(map);
+    marker.bindPopup("<b>Your Location</b><br>").openPopup();
+  }
+
+  // Handle back button
+  window.onpopstate = function(event) {
+    document.getElementById("map").style.display = "none";
+    document.getElementById("authBox").style.display = "flex";
+    show("signin");
+  };
+</script>
+</body>
+</html>
