@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>NavIC Messaging Service</title>
+  <title>NavIC Messaging Service For Fishermen</title>
+
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
     body {
@@ -30,10 +31,74 @@
       text-align: center; font-size: 0.9em; margin-top: 10px;
     }
     .link button {
-      background: none; border: none; color: blue; text-decoration: underline; cursor: pointer;
+      background: none; border: none; color: rgb(14, 13, 13); text-decoration: underline; cursor: pointer;
     }
+
     #map {
-      height: 100vh; width: 100%; display: none;
+      height: calc(100vh - 100px - 50px); width: 100%; display: none;
+      margin-top: 100px; margin-bottom: 50px;
+    }
+
+    #mapHeader {
+      display: none;
+      background: #e0f2ff;
+      color: #141313;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100px;
+      z-index: 1000;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      box-sizing: border-box;
+    }
+
+    #mapHeaderLeft {
+      display: flex;
+      align-items: center;
+    }
+
+    #mapHeader img {
+      height: 80px;
+      width: auto;
+      margin-right: 20px;
+    }
+
+    #mapHeaderText {
+      font-size: 24px;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    #logoutBtn {
+      display: none;
+      background: #0c0c0c;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 18px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    #mapFooter {
+      display: none;
+      background: #e0f2ff;
+      color: rgb(20, 19, 19);
+      font-size: 14px;
+      position: fixed;
+      bottom: 0;
+      right: 0;
+      width: 100%;
+      height: 50px;
+      z-index: 1000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
     }
   </style>
 </head>
@@ -42,26 +107,26 @@
 <!-- Login/Signup Box -->
 <div class="centered" id="authBox">
   <div class="box">
-    <h1>NavIC Messaging Service</h1>
+    <h1>NavIC Messaging Service For Fishermen</h1>
 
     <!-- Sign In -->
-    <form id="signin" onsubmit="event.preventDefault(); loginSuccess();">
+    <form id="signin">
       <h2>Sign In</h2>
-      <div><label>Username<input required></label></div>
-      <div><label>Password<input type="password" required></label></div>
+      <div><label>Username<input id="signinUser" required></label></div>
+      <div><label>Password<input type="password" id="signinPass" required></label></div>
       <input type="submit" value="Log In" />
-      <div class="link"><button onclick="show('forgot')">Forgot Password?</button></div>
-      <div class="link">New user? <button onclick="show('signup')">Sign Up</button></div>
+      <div class="link"><button type="button" onclick="show('forgot')">Forgot Password?</button></div>
+      <div class="link">New user? <button type="button" onclick="show('signup')">Sign Up</button></div>
     </form>
 
     <!-- Sign Up -->
-    <form id="signup" style="display:none" onsubmit="event.preventDefault(); alert('Account created!'); show('signin')">
+    <form id="signup" style="display:none">
       <h2>Sign Up</h2>
-      <div><label>Email<input type="email" required></label></div>
-      <div><label>Username<input required></label></div>
-      <div><label>Password<input type="password" required></label></div>
+      <div><label>Email<input type="email" id="signupEmail" required></label></div>
+      <div><label>Username<input id="signupUser" required></label></div>
+      <div><label>Password<input type="password" id="signupPass" required></label></div>
       <input type="submit" value="Sign Up" />
-      <div class="link">Have an account? <button onclick="show('signin')">Sign In</button></div>
+      <div class="link">Have an account? <button type="button" onclick="show('signin')">Sign In</button></div>
     </form>
 
     <!-- Forgot Password -->
@@ -69,13 +134,22 @@
       <h2>Reset Password</h2>
       <div><label>Email<input type="email" required></label></div>
       <button class="btn" type="submit">Send Reset Link</button>
-      <div class="link"><button onclick="show('signin')">Back to Sign In</button></div>
+      <div class="link"><button type="button" onclick="show('signin')">Back to Sign In</button></div>
     </form>
   </div>
 </div>
 
-<!-- Map Container -->
+<!-- Header and Map -->
+<div id="mapHeader">
+  <div id="mapHeaderLeft">
+    <img src="https://elenageo.com/static/media/elena-site-logo-558_x_106-removebg-preview.1dc64bdd.png" alt="Logo">
+    <div id="mapHeaderText">NavIC MESSAGING SERVICE FOR FISHERMEN</div>
+  </div>
+  <button id="logoutBtn" onclick="logout()">Logout</button>
+</div>
+
 <div id="map"></div>
+<div id="mapFooter">©️ 2025 ELENA GEO TECH PVT. LTD.</div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
@@ -84,30 +158,103 @@
       document.getElementById(i).style.display = (i === id ? 'block' : 'none'));
   }
 
+  function validatePassword(password) {
+    return password.length >= 6 && /[a-zA-Z]/.test(password) && /\d/.test(password);
+  }
+
+  function showMessage(formId, msg, color = 'red') {
+    removeMessages();
+    const form = document.getElementById(formId);
+    const message = document.createElement('div');
+    message.className = 'message';
+    message.style.color = color;
+    message.style.textAlign = 'center';
+    message.textContent = msg;
+    form.appendChild(message);
+  }
+
+  function removeMessages() {
+    document.querySelectorAll('.message').forEach(el => el.remove());
+  }
+
+  // SIGN UP
+  document.getElementById('signup').addEventListener('submit', function (e) {
+    e.preventDefault();
+    const email = document.getElementById('signupEmail').value.trim();
+    const username = document.getElementById('signupUser').value.trim();
+    const password = document.getElementById('signupPass').value;
+
+    if (!validatePassword(password)) {
+      showMessage('signup', 'Password must be 6+ chars with letters and numbers.');
+      return;
+    }
+
+    if (localStorage.getItem('user_' + username)) {
+      showMessage('signup', 'Username already exists.');
+      return;
+    }
+
+    localStorage.setItem('user_' + username, JSON.stringify({ email, password }));
+    alert('Account created successfully!');
+    show('signin');
+  });
+
+  // SIGN IN
+  document.getElementById('signin').addEventListener('submit', function (e) {
+    e.preventDefault();
+    const username = document.getElementById('signinUser').value.trim();
+    const password = document.getElementById('signinPass').value;
+
+    const stored = localStorage.getItem('user_' + username);
+    if (!stored) {
+      showMessage('signin', 'User not found.');
+      return;
+    }
+
+    const user = JSON.parse(stored);
+    if (user.password !== password) {
+      showMessage('signin', 'Incorrect password.');
+      return;
+    }
+
+    loginSuccess();
+  });
+
   function loginSuccess() {
     document.getElementById("authBox").style.display = "none";
     document.getElementById("map").style.display = "block";
+    document.getElementById("mapHeader").style.display = "flex";
+    document.getElementById("mapFooter").style.display = "flex";
+    document.getElementById("logoutBtn").style.display = "block";
     loadMap();
     history.pushState({ page: "map" }, "Map", "#map");
   }
 
+  function logout() {
+    document.getElementById("map").style.display = "none";
+    document.getElementById("mapHeader").style.display = "none";
+    document.getElementById("mapFooter").style.display = "none";
+    document.getElementById("authBox").style.display = "flex";
+    document.getElementById("logoutBtn").style.display = "none";
+    show("signin");
+    history.pushState({ page: "login" }, "Login", "#login");
+  }
+
   function loadMap() {
     const map = L.map('map').setView([20.0, 80.0], 5);
-
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
-
-    // pinpoint marker for location
     const marker = L.marker([12.968266, 77.601334]).addTo(map);
-    marker.bindPopup("<b>Your Location</b><br>").openPopup();
+    marker.bindPopup("<b>Your Location</b>").openPopup();
   }
 
-  // Handle back button
-  window.onpopstate = function(event) {
-    document.getElementById("map").style.display = "none";
-    document.getElementById("authBox").style.display = "flex";
-    show("signin");
+  window.onpopstate = function (event) {
+    if (event.state && event.state.page === "map") {
+      loginSuccess();
+    } else {
+      logout();
+    }
   };
 </script>
 </body>
